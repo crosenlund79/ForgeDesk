@@ -51,7 +51,18 @@ The active side is the one you last clicked or typed in. Normal browser keys wor
 * **One live browser instance per conversation.** Switching conversation or project hides the current instance instead of closing it, so a response that is still streaming keeps going, and scroll position and unsent drafts are preserved. Coming back shows the same instance — no reload.
 * **A conversation mapped in several projects shares one instance.**
 * **Bounded resources.** Each side keeps up to *N* instances (default 6). Above that, hidden instances are released — least recently used first, and **only after they have been hidden for at least 10 minutes** and are not playing audio. A conversation you just switched away from is never closed immediately. Both values are in menu `⋯` → **Background conversations**. Instances load lazily: at start-up only the active project's two conversations load.
-* **Not guaranteed:** whether a provider keeps generating in a hidden page is up to the provider's site and Chromium's background-page policies. Hidden pages keep their network connections, but timers are throttled. Hands-on testing is needed — see the playtest checklist.
+* **Verified mechanism:** the CI smoke test streams a slow HTTP response into a page, hides that instance behind another project, and checks it kept arriving: 23 of 40 chunks arrived while hidden, the stream completed, and the page state was intact when shown again. Page timers in hidden instances are throttled by Chromium (~1 per second).
+* **Not guaranteed:** whether ChatGPT and Claude themselves keep generating in a hidden page depends on their sites (they could pause work when a tab is hidden). This needs your hands-on check — see the playtest checklist.
+
+## Known limitations
+
+* Windows only (WPF + WebView2). Tested in CI on Windows Server 2025; your Windows 10/11 desktop is the real test.
+* Google may block sign-in inside embedded browsers; use email sign-in if so (see below).
+* "Background conversations" can only be kept alive while ForgeDesk runs; closing ForgeDesk closes all pages (the providers keep your history as usual).
+* A hidden conversation above the per-side limit is released after its grace period; coming back to it reloads that page (drafts the provider itself doesn't save are lost).
+* Drift detection compares conversation identities (`/c/<id>`, `/chat/<id>`); for non-conversation pages (project pages, home) it compares the path.
+* Each side shows its provider only (ChatGPT left, Claude right); the sides can't be swapped in this prototype.
+* No installer or auto-update; download a newer artifact to update (your data in `%LOCALAPPDATA%\ForgeDesk` is kept).
 
 ## Compatibility status
 
@@ -72,6 +83,7 @@ WebView2 identifies itself with the standard Microsoft Edge user agent; ForgeDes
 
 * Email sign-in (code/magic link) and password sign-in work like in Edge.
 * "Continue with Google/Apple/Microsoft" opens the provider's sign-in popup in a small in-app window (title shows the site's host) that shares the session.
+* When a session has expired, the side shows "Sign in to … to open “conversation”" instead of a navigation warning, and after you sign in ForgeDesk opens the mapped conversation again automatically.
 * **Google may refuse sign-in inside embedded browsers** ("This browser or app may not be secure"). ForgeDesk does **not** disguise itself to get around that. If it happens, sign in with the provider's email option (both ChatGPT and Claude support email login to the same account), or another identity provider.
 * Links inside answers open in your default browser.
 

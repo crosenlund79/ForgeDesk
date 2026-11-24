@@ -8,6 +8,7 @@ Things that can only be verified with your real accounts on your own Windows PC.
 - [ ] Left side → **Open ChatGPT** → sign in. Right side → **Open Claude** → sign in.
   - If you use "Continue with Google": does the popup work, or does Google refuse the embedded browser? (If refused, use the email option.)
 - [ ] Close ForgeDesk, start it again: both sides are still signed in.
+- [ ] With a conversation mapped while signed out, the side says "Sign in to … to open …"; after signing in, the mapped conversation opens by itself.
 
 ## 2. Mapping conversations
 - [ ] Paste a ChatGPT conversation link via **Add conversation…**; the dialog says "ChatGPT conversation".
