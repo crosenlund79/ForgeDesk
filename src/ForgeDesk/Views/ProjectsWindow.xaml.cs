@@ -10,6 +10,7 @@ public partial class ProjectsWindow : Window
 {
     private readonly Workspace _workspace;
     private bool _loadingSelection;
+    private Project? _detailsProject;
 
     public ProjectsWindow(Window? owner, Workspace workspace, Project? select = null)
     {
@@ -54,13 +55,14 @@ public partial class ProjectsWindow : Window
     private void ShowSelected()
     {
         var project = Selected;
+        _detailsProject = project;
         _loadingSelection = true;
         DetailsPanel.Visibility = project is null ? Visibility.Collapsed : Visibility.Visible;
         NoSelectionText.Visibility = project is null ? Visibility.Visible : Visibility.Collapsed;
         NameBox.Text = project?.Name ?? string.Empty;
         DialogSupport.BuildSwatches(SwatchPanel, project?.Color, color =>
         {
-            if (!_loadingSelection && Selected is { } p)
+            if (!_loadingSelection && _detailsProject is { } p && _workspace.Projects.Contains(p))
             {
                 _workspace.SetProjectColor(p, color);
             }
@@ -85,9 +87,10 @@ public partial class ProjectsWindow : Window
         OpenButton.IsEnabled = project is { IsArchived: false };
     }
 
+    /// <summary>Applies the name box to the project whose details are shown (not the newly selected one).</summary>
     private void CommitName()
     {
-        if (_loadingSelection || Selected is not { } project)
+        if (_loadingSelection || _detailsProject is not { } project || !_workspace.Projects.Contains(project))
         {
             return;
         }

@@ -8,6 +8,7 @@
         FontFamily="{StaticResource UiFont}" FontSize="13" UseLayoutRounding="True" SnapsToDevicePixels="True">
     <Window.Resources>
         <Style x:Key="DeskProjectTab" TargetType="ListBoxItem" BasedOn="{StaticResource ProjectTabItem}">
+            <EventSetter Event="PreviewMouseRightButtonDown" Handler="ProjectTab_PreviewMouseRightButtonDown" />
             <EventSetter Event="MouseRightButtonUp" Handler="ProjectTab_MouseRightButtonUp" />
             <EventSetter Event="MouseDoubleClick" Handler="ProjectTab_MouseDoubleClick" />
             <Setter Property="ToolTip" Value="{Binding Name}" />
@@ -52,7 +53,7 @@
                 <ColumnDefinition x:Name="RightColumn" Width="*" MinWidth="280" />
             </Grid.ColumnDefinitions>
             <views:PaneView x:Name="LeftPane" Grid.Column="0" />
-            <GridSplitter x:Name="Splitter" Grid.Column="1" Style="{StaticResource DeskSplitter}"
+            <GridSplitter x:Name="Splitter" Grid.Column="1" Style="{StaticResource DeskSplitter}" ToolTipService.InitialShowDelay="1500"
                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                           ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" ShowsPreview="False"
                           ToolTip="Drag to resize · double-click to split evenly"

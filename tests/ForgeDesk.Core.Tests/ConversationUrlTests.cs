@@ -101,6 +101,26 @@ public class ConversationUrlTests
     }
 
     [Theory]
+    [InlineData("https://claude.ai/login?returnTo=%2Fchat%2Fabc", true)]
+    [InlineData("https://claude.ai/magic-link#token", true)]
+    [InlineData("https://chatgpt.com/auth/login", true)]
+    [InlineData("https://auth.openai.com/log-in", true)]
+    [InlineData("https://accounts.google.com/o/oauth2/v2/auth?client_id=x", true)]
+    [InlineData("https://appleid.apple.com/auth/authorize", true)]
+    [InlineData("https://login.microsoftonline.com/common/oauth2", true)]
+    [InlineData("https://claude.ai/chat/" + Id2, false)]
+    [InlineData("https://chatgpt.com/", false)]
+    [InlineData("https://chatgpt.com/c/" + Id1, false)]
+    [InlineData("https://example.com/login", false)]
+    [InlineData("https://claude.ai/loginhelp", false)]
+    [InlineData("about:blank", false)]
+    [InlineData(null, false)]
+    public void Sign_in_pages_are_recognised(string? url, bool expected)
+    {
+        Assert.Equal(expected, ConversationUrl.IsSignInPage(url));
+    }
+
+    [Theory]
     [InlineData(Provider.ChatGpt, "Racing AI tuning - ChatGPT", "Racing AI tuning")]
     [InlineData(Provider.ChatGpt, "ChatGPT", "")]
     [InlineData(Provider.Claude, "Multiplayer netcode - Claude", "Multiplayer netcode")]

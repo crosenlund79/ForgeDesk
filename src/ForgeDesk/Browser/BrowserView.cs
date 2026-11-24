@@ -20,6 +20,9 @@ internal sealed class BrowserView : IDisposable
     private CoreWebView2? _core;
     private bool _disposed;
     private bool _applyingZoom;
+    private string _homeUrl;
+    private bool _wasOnSignInPage;
+    private bool _autoReturned;
 
     public BrowserView(Provider provider, string key, string homeUrl, Preferences preferences, Window owner)
     {
@@ -27,7 +30,7 @@ internal sealed class BrowserView : IDisposable
         _preferences = preferences;
         _owner = owner;
         Key = key;
-        HomeUrl = homeUrl;
+        _homeUrl = homeUrl;
         WebView = new WebView2
         {
             DefaultBackgroundColor = ThemeManager.ContentBackground,
@@ -42,7 +45,23 @@ internal sealed class BrowserView : IDisposable
     public string Key { get; set; }
 
     /// <summary>The mapped URL this instance belongs to; used for drift detection and "Return".</summary>
-    public string HomeUrl { get; set; }
+    public string HomeUrl
+    {
+        get => _homeUrl;
+        set
+        {
+            _homeUrl = value;
+            HasShownHome = CurrentUrl is not null && !IsDrifted;
+        }
+    }
+
+    /// <summary>
+    /// Whether this instance has displayed its mapped page at least once. If not, a different
+    /// page usually means the session is signed out or the conversation isn't accessible.
+    /// </summary>
+    public bool HasShownHome { get; private set; }
+
+    public bool IsOnSignInPage => ConversationUrl.IsSignInPage(CurrentUrl);
 
     public DateTimeOffset CreatedAt { get; }
 
@@ -241,8 +260,34 @@ internal sealed class BrowserView : IDisposable
     private void OnSourceChanged(object? sender, CoreWebView2SourceChangedEventArgs e)
     {
         CurrentUrl = _core?.Source;
+        if (CurrentUrl is not null && !IsDrifted)
+        {
+            HasShownHome = true;
+        }
+
+        // After signing in, providers often land on their home page instead of the conversation
+        // that was requested. Go to the mapped conversation once, automatically.
+        var onSignIn = IsOnSignInPage;
+        if (_wasOnSignInPage && !onSignIn && !HasShownHome && !_autoReturned &&
+            ConversationUrl.IsProviderUrl(_provider, CurrentUrl))
+        {
+            _autoReturned = true;
+            Log.Info($"Signed in to {_provider.DisplayName()}; opening the mapped page.");
+            Defer(() => _core?.Navigate(HomeUrl));
+        }
+
+        _wasOnSignInPage = onSignIn;
         Raise();
     }
+
+    private void Defer(Action action) =>
+        WebView.Dispatcher.BeginInvoke(() =>
+        {
+            if (!_disposed)
+            {
+                action();
+            }
+        });
 
     private void OnDocumentTitleChanged(object? sender, object e)
     {

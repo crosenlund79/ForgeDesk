@@ -165,6 +165,44 @@ public static partial class ConversationUrl
     public static bool IsSameConversation(Provider provider, string? a, string? b) =>
         a is not null && b is not null && GetKey(provider, a) == GetKey(provider, b);
 
+    private static readonly string[] IdentityHosts =
+    [
+        "accounts.google.com", "appleid.apple.com", "login.microsoftonline.com", "login.live.com",
+        "login.microsoft.com", "account.live.com", "auth.openai.com", "auth0.openai.com",
+    ];
+
+    private static readonly string[] SignInPaths =
+    [
+        "/login", "/log-in", "/signin", "/sign-in", "/signup", "/sign-up", "/auth", "/magic-link", "/oauth",
+    ];
+
+    /// <summary>
+    /// True for sign-in pages of the providers and their identity providers. Used to show
+    /// "sign in" guidance instead of a "you moved away" warning when a session has expired.
+    /// </summary>
+    public static bool IsSignInPage(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url.Trim(), UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+        {
+            return false;
+        }
+
+        var host = uri.Host.ToLowerInvariant();
+        if (IdentityHosts.Any(h => host == h || host.EndsWith("." + h, StringComparison.Ordinal)))
+        {
+            return true;
+        }
+
+        if (DetectProvider(host) is null)
+        {
+            return false;
+        }
+
+        var path = NormalizePath(uri.AbsolutePath).ToLowerInvariant();
+        return SignInPaths.Any(p => path == p || path.StartsWith(p + "/", StringComparison.Ordinal));
+    }
+
     /// <summary>True when the URL is served by the given provider's website.</summary>
     public static bool IsProviderUrl(Provider provider, string? url) =>
         TryParseProviderUri(provider, url, out _);

@@ -214,10 +214,6 @@ public partial class MainWindow : Window
         {
             UpdateTitle();
         }
-        else if (e.PropertyName == nameof(Project.IsArchived))
-        {
-            ApplyActiveProject();
-        }
     }
 
     private void UpdateTitle() =>
@@ -286,6 +282,9 @@ public partial class MainWindow : Window
             e.Handled = true;
         }
     }
+
+    // Right-clicking a tab opens its menu without switching to the project.
+    private void ProjectTab_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e) => e.Handled = true;
 
     private void ProjectTab_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {

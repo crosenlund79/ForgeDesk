@@ -97,12 +97,15 @@ internal static class SmokeTest
             var alphaRightNavigations = alphaRight.DocumentNavigations;
 
             // 2. Independent selection on one side.
+            var claudeSelectionBefore = alpha.Desk.SelectedClaudeId;
+            report.Info["alphaChatGptNotice"] = left.NoticeMessage;
+            report.Info["alphaClaudeNotice"] = right.NoticeMessage;
             var gpts = alpha.ChatGptConversations[1];
             left.SelectMapping(gpts);
             await Task.Delay(300);
             var gptsView = left.CurrentView;
             report.Check("Selecting a ChatGPT conversation leaves Claude untouched",
-                ReferenceEquals(right.CurrentView, alphaRight) && alpha.Desk.SelectedClaudeId == alpha.ClaudeConversations[0].Id &&
+                ReferenceEquals(right.CurrentView, alphaRight) && alpha.Desk.SelectedClaudeId == claudeSelectionBefore &&
                 alpha.Desk.SelectedChatGptId == gpts.Id && !ReferenceEquals(gptsView, alphaLeft), critical: true);
             if (gptsView is not null)
             {
@@ -131,6 +134,8 @@ internal static class SmokeTest
             await Task.Delay(2500);
             report.Info["betaChatGptDrifted"] = betaLeft?.IsDrifted;
             report.Info["betaClaudeDrifted"] = betaRight?.IsDrifted;
+            report.Info["betaChatGptNotice"] = left.NoticeMessage;
+            report.Info["betaClaudeNotice"] = right.NoticeMessage;
             await Screenshot(window, outputDirectory, "02-beta-desk-30-70", report);
 
             ws.ActivateProject(alpha);
@@ -168,6 +173,9 @@ internal static class SmokeTest
             alphaLeft.NavigateHome();
             await WaitFor(() => !alphaLeft.IsDrifted, TimeSpan.FromSeconds(15));
             report.Check("“Return” goes back to the mapped conversation", !alphaLeft.IsDrifted, critical: true, Log.Safe(alphaLeft.CurrentUrl));
+
+            // 5b. Background streaming: a hidden instance keeps receiving a streamed response.
+            await BackgroundStreamingCheck(window, alphaLeft, alpha, beta, report);
 
             // 6. Empty project state.
             ws.ActivateProject(gamma);
@@ -235,6 +243,154 @@ internal static class SmokeTest
         }
 
         return Finish(report, outputDirectory);
+    }
+
+    /// <summary>
+    /// Serves a local page that consumes a slowly streamed HTTP response (like a chat answer),
+    /// hides that browser instance by switching project, and verifies the stream and the page's
+    /// scripts kept running while hidden. This checks the browser-level mechanism ForgeDesk relies
+    /// on for background generation; whether a provider's own site keeps generating is separate.
+    /// </summary>
+    private static async Task BackgroundStreamingCheck(MainWindow window, BrowserView view, Project shownProject, Project otherProject, Report report)
+    {
+        const int Chunks = 40;
+        const int ChunkDelayMs = 300;
+        var probe = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        probe.Start();
+        var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
+        probe.Stop();
+
+        using var listener = new System.Net.HttpListener();
+        listener.Prefixes.Add($"http://localhost:{port}/");
+        try
+        {
+            listener.Start();
+        }
+        catch (Exception ex)
+        {
+            report.Check("Hidden instance keeps streaming (local test server)", false, critical: false, "could not start local server: " + ex.Message);
+            return;
+        }
+
+        const string Page = """
+            <!doctype html><title>stream test</title><body style="background:#202020;color:#ddd;font:14px sans-serif">
+            <p id="s">streaming…</p>
+            <script>
+            window.ticks = 0; window.hiddenTicks = 0; window.chunks = 0; window.hiddenChunks = 0; window.done = false;
+            setInterval(() => { window.ticks++; if (document.hidden) window.hiddenTicks++; }, 500);
+            (async () => {
+              const reader = (await fetch('/stream')).body.getReader();
+              for (;;) {
+                const { done } = await reader.read();
+                if (done) break;
+                window.chunks++; if (document.hidden) window.hiddenChunks++;
+                document.getElementById('s').textContent = 'chunks: ' + window.chunks;
+              }
+              window.done = true;
+            })();
+            </script>
+            """;
+
+        _ = Task.Run(async () =>
+        {
+            while (listener.IsListening)
+            {
+                System.Net.HttpListenerContext context;
+                try
+                {
+                    context = await listener.GetContextAsync();
+                }
+                catch (Exception)
+                {
+                    return;
+                }
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var response = context.Response;
+                        if (context.Request.Url?.AbsolutePath == "/stream")
+                        {
+                            response.SendChunked = true;
+                            response.ContentType = "text/plain";
+                            for (var i = 0; i < Chunks; i++)
+                            {
+                                var bytes = System.Text.Encoding.UTF8.GetBytes($"chunk {i}\n");
+                                await response.OutputStream.WriteAsync(bytes);
+                                await response.OutputStream.FlushAsync();
+                                await Task.Delay(ChunkDelayMs);
+                            }
+                        }
+                        else
+                        {
+                            response.ContentType = "text/html; charset=utf-8";
+                            var bytes = System.Text.Encoding.UTF8.GetBytes(Page);
+                            await response.OutputStream.WriteAsync(bytes);
+                        }
+
+                        response.Close();
+                    }
+                    catch (Exception)
+                    {
+                    }
+                });
+            }
+        });
+
+        var core = view.WebView.CoreWebView2;
+        if (core is null)
+        {
+            report.Check("Hidden instance keeps streaming (local test server)", false, critical: true, "browser not ready");
+            return;
+        }
+
+        core.Navigate($"http://localhost:{port}/");
+        await WaitFor(() => view.CurrentUrl?.StartsWith($"http://localhost:{port}", StringComparison.Ordinal) == true && !view.IsLoading, TimeSpan.FromSeconds(15));
+        await Task.Delay(1000);
+        var before = await ReadState(core);
+
+        window.Workspace.ActivateProject(otherProject);   // hides the instance
+        await Task.Delay(7000);
+        var whileHidden = await ReadState(core);
+        window.Workspace.ActivateProject(shownProject);   // shows it again
+        await Task.Delay(ChunkDelayMs * Chunks);           // let the stream finish
+        var after = await ReadState(core);
+
+        report.Info["streamBefore"] = before;
+        report.Info["streamWhileHidden"] = whileHidden;
+        report.Info["streamAfter"] = after;
+        using var hiddenDoc = JsonDocument.Parse(whileHidden ?? "{}");
+        var root = hiddenDoc.RootElement;
+        var wasHidden = root.TryGetProperty("visibility", out var vis) && vis.GetString() == "hidden";
+        var hiddenChunks = root.TryGetProperty("hiddenChunks", out var hc) ? hc.GetInt32() : 0;
+        var hiddenTicks = root.TryGetProperty("hiddenTicks", out var ht) ? ht.GetInt32() : 0;
+        report.Check("Hidden instance really is hidden while another project is shown", wasHidden, critical: true, whileHidden);
+        report.Check("Hidden instance keeps receiving a streamed response", hiddenChunks >= 10, critical: true, $"{hiddenChunks} chunks arrived while hidden");
+        report.Check("Hidden instance keeps running page scripts (timers may be throttled)", hiddenTicks >= 3, critical: false, $"{hiddenTicks} timer ticks while hidden");
+        using var afterDoc = JsonDocument.Parse(after ?? "{}");
+        report.Check("Stream completed; page state intact after showing it again",
+            afterDoc.RootElement.TryGetProperty("done", out var done) && done.GetBoolean() &&
+            afterDoc.RootElement.TryGetProperty("chunks", out var total) && total.GetInt32() == Chunks, critical: true, after);
+
+        listener.Stop();
+        view.NavigateHome();
+        await WaitFor(() => !view.IsDrifted && !view.IsLoading, TimeSpan.FromSeconds(15));
+    }
+
+    private static async Task<string?> ReadState(Microsoft.Web.WebView2.Core.CoreWebView2 core)
+    {
+        try
+        {
+            var json = await core.ExecuteScriptAsync(
+                "JSON.stringify({ticks: window.ticks, hiddenTicks: window.hiddenTicks, chunks: window.chunks, hiddenChunks: window.hiddenChunks, done: window.done, visibility: document.visibilityState})");
+            // ExecuteScriptAsync returns the JSON encoding of the (string) result.
+            return JsonSerializer.Deserialize<string>(json);
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
     }
 
     // ---------------------------------------------------------------- helpers

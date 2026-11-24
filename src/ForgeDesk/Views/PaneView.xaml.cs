@@ -67,6 +67,9 @@ public partial class PaneView : UserControl
 
     public bool IsBrowsing => _browsing;
 
+    /// <summary>The notice bar text, if it is showing (diagnostics).</summary>
+    internal string? NoticeMessage => NoticeBar.Visibility == Visibility.Visible ? NoticeText.Text : null;
+
     private string BrowseKey => $"{Provider}:browse";
 
     // ================================================================ setup
@@ -119,6 +122,12 @@ public partial class PaneView : UserControl
         _commitTimer.Stop();
         _hasPending = false;
         var selection = project is null ? null : _workspace.ResolveSelection(project, Provider);
+        if (project is not null && selection is not null && project.Desk.GetSelectedId(Provider) != selection.Id)
+        {
+            // Remember what is shown so the desk comes back exactly the same, even after reordering.
+            _workspace.SelectConversation(project, Provider, selection);
+        }
+
         SetComboSelection(_list, selection);
 
         if (project is null)
@@ -658,6 +667,20 @@ public partial class PaneView : UserControl
                     mappable ? "Map this page…" : null, MapCurrentPage, "Close", ExitBrowse);
             }
 
+            return;
+        }
+
+        if (_mapping is not null && view.IsDrifted && view.IsOnSignInPage)
+        {
+            ShowNotice(NoticeStyle.Info, $"Sign in to {Provider.DisplayName()} to open “{_mapping.Name}”. You'll be taken back to it afterwards.",
+                null, null, "Return", ReturnToMapping);
+            return;
+        }
+
+        if (_mapping is not null && view.IsDrifted && !view.HasShownHome && !view.IsLoading)
+        {
+            ShowNotice(NoticeStyle.Info, $"“{_mapping.Name}” didn't open. If you're signed out, sign in to {Provider.DisplayName()} first; then choose Return.",
+                "Return", ReturnToMapping, null, null);
             return;
         }
 
