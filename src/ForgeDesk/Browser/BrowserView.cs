@@ -22,7 +22,6 @@ internal sealed class BrowserView : IDisposable
     private bool _applyingZoom;
     private string _homeUrl;
     private bool _wasOnSignInPage;
-    private bool _autoReturned;
 
     public BrowserView(Provider provider, string key, string homeUrl, Preferences preferences, Window owner)
     {
@@ -266,12 +265,11 @@ internal sealed class BrowserView : IDisposable
         }
 
         // After signing in, providers often land on their home page instead of the conversation
-        // that was requested. Go to the mapped conversation once, automatically.
+        // this view is mapped to. Leaving a sign-in page for another page of the provider's site
+        // therefore returns to the mapped conversation (once per sign-in).
         var onSignIn = IsOnSignInPage;
-        if (_wasOnSignInPage && !onSignIn && !HasShownHome && !_autoReturned &&
-            ConversationUrl.IsProviderUrl(_provider, CurrentUrl))
+        if (_wasOnSignInPage && !onSignIn && IsDrifted && ConversationUrl.IsProviderUrl(_provider, CurrentUrl))
         {
-            _autoReturned = true;
             Log.Info($"Signed in to {_provider.DisplayName()}; opening the mapped page.");
             Defer(() => _core?.Navigate(HomeUrl));
         }

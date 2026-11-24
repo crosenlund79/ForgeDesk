@@ -80,6 +80,7 @@ public partial class PaneView : UserControl
         _workspace = workspace;
         Provider = provider;
         ProviderLabel.Text = provider.DisplayName();
+        ProviderBadge.ToolTip = provider.DisplayName();
         ProviderBadge.SetResourceReference(Border.BackgroundProperty, provider == Provider.ChatGpt ? "ChatGptBrush" : "ClaudeBrush");
 
         var preferences = workspace.Preferences;
@@ -852,6 +853,16 @@ public partial class PaneView : UserControl
             CopyButton.ToolTip = "Copy link to this conversation";
         };
         timer.Start();
+    }
+
+    /// <summary>Keeps the conversation picker usable on narrow sides by dropping secondary icons.</summary>
+    private void PaneView_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        var width = e.NewSize.Width;
+        var secondary = width < 520 ? Visibility.Collapsed : Visibility.Visible;
+        CopyButton.Visibility = secondary;
+        ExternalButton.Visibility = secondary;
+        ProviderLabel.Visibility = width < 380 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void ReloadButton_Click(object sender, RoutedEventArgs e) => ReloadCurrent();

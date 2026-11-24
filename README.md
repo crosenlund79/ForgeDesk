@@ -53,6 +53,21 @@ The active side is the one you last clicked or typed in. Normal browser keys wor
 * **Bounded resources.** Each side keeps up to *N* instances (default 6). Above that, hidden instances are released — least recently used first, and **only after they have been hidden for at least 10 minutes** and are not playing audio. A conversation you just switched away from is never closed immediately. Both values are in menu `⋯` → **Background conversations**. Instances load lazily: at start-up only the active project's two conversations load.
 * **Not guaranteed:** whether a provider keeps generating in a hidden page is up to the provider's site and Chromium's background-page policies. Hidden pages keep their network connections, but timers are throttled. Hands-on testing is needed — see the playtest checklist.
 
+## Compatibility status
+
+Verified automatically on a Windows runner (Windows Server 2025, WebView2 Runtime 157) by the CI smoke test, **signed out**:
+
+| | ChatGPT (chatgpt.com) | Claude (claude.ai) |
+|---|---|---|
+| Site loads inside WebView2 | Yes — HTTP 200, normal home page with "Log in" | Yes — HTTP 200, redirects to its sign-in page (Google, Apple, email) |
+| Blocked as an embedded browser / bot challenge | Not observed | Not observed |
+| Follows ForgeDesk light/dark theme | Yes | Yes |
+| Conversation URL while signed out | Redirects to home (ForgeDesk explains it didn't open) | Redirects to sign-in (ForgeDesk shows "Sign in to Claude…") |
+
+WebView2 identifies itself with the standard Microsoft Edge user agent; ForgeDesk does not change it.
+
+**Needs your hands-on testing** (requires your accounts): signing in (especially Google SSO), session persistence across restarts, opening your real conversation links, sending and streaming, attachments, clipboard, and whether each provider keeps generating while its page is hidden. See [docs/PLAYTEST.md](docs/PLAYTEST.md).
+
 ## Sign-in notes
 
 * Email sign-in (code/magic link) and password sign-in work like in Edge.
