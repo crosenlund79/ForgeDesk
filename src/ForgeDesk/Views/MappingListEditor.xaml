@@ -1,0 +1,34 @@
+<UserControl x:Class="ForgeDesk.Views.MappingListEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+            <Border x:Name="Badge" Width="8" Height="8" CornerRadius="2" VerticalAlignment="Center" Margin="0,1,8,0" />
+            <TextBlock x:Name="HeaderText" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock x:Name="CountText" Foreground="{DynamicResource TextTertiaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
+        </StackPanel>
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0" LastChildFill="False">
+            <Button x:Name="AddButton" DockPanel.Dock="Left" Content="Add conversation…" Style="{StaticResource TextButton}" Padding="12,4" Click="AddButton_Click" />
+            <Button x:Name="RemoveButton" DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE74D;" ToolTip="Remove from this project (the conversation itself is kept)" Click="RemoveButton_Click" />
+            <Button x:Name="DownButton" DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE74B;" ToolTip="Move down" Click="DownButton_Click" />
+            <Button x:Name="UpButton" DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE74A;" ToolTip="Move up" Click="UpButton_Click" />
+            <Button x:Name="EditButton" DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE70F;" ToolTip="Rename or change link" Click="EditButton_Click" />
+        </DockPanel>
+        <Grid>
+            <ListBox x:Name="List" Style="{StaticResource PlainListBox}" MinHeight="160"
+                     SelectionChanged="List_SelectionChanged" MouseDoubleClick="List_MouseDoubleClick" KeyDown="List_KeyDown">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Url}" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"
+                                       TextTrimming="CharacterEllipsis" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock x:Name="EmptyText" Style="{StaticResource HintText}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       TextAlignment="Center" Margin="24" IsHitTestVisible="False" />
+        </Grid>
+    </DockPanel>
+</UserControl>

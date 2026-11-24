@@ -1,0 +1,72 @@
+<UserControl x:Class="ForgeDesk.Views.PaneView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource ContentBackgroundBrush}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header: provider · conversation picker · actions -->
+        <Border Grid.Row="0" Background="{DynamicResource PaneHeaderBackgroundBrush}"
+                BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1">
+            <Grid Height="40">
+                <DockPanel Margin="12,0,6,0" LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                        <Border x:Name="ProviderBadge" Width="8" Height="8" CornerRadius="2" VerticalAlignment="Center" Margin="0,1,8,0" />
+                        <TextBlock x:Name="ProviderLabel" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="ReloadButton" Style="{StaticResource IconButton}" Content="&#xE72C;" ToolTip="Reload (F5)" Click="ReloadButton_Click" />
+                        <Button x:Name="CopyButton" Style="{StaticResource IconButton}" Content="&#xE71B;" ToolTip="Copy link to this conversation" Click="CopyButton_Click" />
+                        <Button x:Name="ExternalButton" Style="{StaticResource IconButton}" Content="&#xE8A7;" ToolTip="Open in your default browser" Click="ExternalButton_Click" />
+                        <Button x:Name="MoreButton" Style="{StaticResource IconButton}" Content="&#xE712;" ToolTip="More" Click="MoreButton_Click" />
+                        <Button x:Name="FocusButton" Style="{StaticResource IconButton}" Content="&#xE740;" ToolTip="Maximise this side (F11)" Click="FocusButton_Click" />
+                    </StackPanel>
+
+                    <Grid HorizontalAlignment="Left" MinWidth="150" MaxWidth="520">
+                        <ComboBox x:Name="ConversationCombo" Style="{StaticResource PaneComboBox}" VerticalAlignment="Center"
+                                  SelectionChanged="ConversationCombo_SelectionChanged" DropDownClosed="ConversationCombo_DropDownClosed"
+                                  ToolTip="Conversations mapped to this project (Alt+1…9)" />
+                        <TextBlock x:Name="ComboPlaceholder" IsHitTestVisible="False" Margin="9,0,30,0" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextTertiaryBrush}" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </DockPanel>
+                <ProgressBar x:Name="LoadingBar" Height="2" VerticalAlignment="Bottom" IsIndeterminate="False" BorderThickness="0"
+                             Background="Transparent" Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed" Margin="0,0,0,-1" />
+            </Grid>
+        </Border>
+
+        <!-- Notice bar: navigation drift, browsing mode, load errors -->
+        <Border Grid.Row="1" x:Name="NoticeBar" Visibility="Collapsed" BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource DividerBrush}" Padding="12,5,6,5">
+            <DockPanel LastChildFill="True">
+                <TextBlock x:Name="NoticeIcon" DockPanel.Dock="Left" FontFamily="{StaticResource IconFont}" FontSize="13"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="NoticePrimary" Style="{StaticResource NoticeButton}" Click="NoticePrimary_Click" />
+                    <Button x:Name="NoticeSecondary" Style="{StaticResource NoticeButton}" Margin="2,0,0,0" Click="NoticeSecondary_Click" />
+                </StackPanel>
+                <TextBlock x:Name="NoticeText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="12.5" />
+            </DockPanel>
+        </Border>
+
+        <!-- Browser host: one WebView2 per live conversation; only the current one is visible -->
+        <Grid Grid.Row="2" x:Name="BrowserHost" Background="{DynamicResource ContentBackgroundBrush}">
+            <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="400" Margin="24">
+                <TextBlock x:Name="EmptyGlyph" FontFamily="{StaticResource IconFont}" FontSize="30" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextTertiaryBrush}" Text="&#xE8BD;" />
+                <TextBlock x:Name="EmptyTitle" FontSize="15" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,14,0,6" />
+                <TextBlock x:Name="EmptyBody" TextAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" LineHeight="19" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
+                    <Button x:Name="EmptyPrimary" Style="{StaticResource AccentButton}" Click="EmptyPrimary_Click" />
+                    <Button x:Name="EmptySecondary" Style="{StaticResource TextButton}" Margin="8,0,0,0" Click="EmptySecondary_Click" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

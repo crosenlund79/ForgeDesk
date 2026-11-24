@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- Allows the WPF project to be compiled (not run) on Linux/macOS build agents. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>ForgeDesk</AssemblyName>
+    <RootNamespace>ForgeDesk</RootNamespace>
+    <ApplicationIcon>Assets\ForgeDesk.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyTitle>ForgeDesk</AssemblyTitle>
+    <Description>ForgeDesk – one desk, two assistants, your projects.</Description>
+    <!-- WPF's Fluent ThemeMode API is flagged experimental (WPF0001). -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ForgeDesk.Core\ForgeDesk.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\ForgeDesk.ico" />
+    <Resource Include="Assets\ForgeDesk.png" />
+  </ItemGroup>
+</Project>

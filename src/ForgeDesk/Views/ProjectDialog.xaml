@@ -1,0 +1,22 @@
+<Window x:Class="ForgeDesk.Views.ProjectDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="New project" Width="420" SizeToContent="Height"
+        ResizeMode="NoResize" ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="{StaticResource UiFont}" FontSize="13" UseLayoutRounding="True">
+    <StackPanel Margin="22,20,22,18">
+        <TextBlock x:Name="HeadingText" Text="New project" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,14" />
+        <TextBlock Text="Name" Style="{StaticResource FieldLabel}" />
+        <TextBox x:Name="NameBox" Style="{StaticResource FieldTextBox}" MaxLength="80" TextChanged="NameBox_TextChanged" />
+        <TextBlock Text="Colour (optional)" Style="{StaticResource FieldLabel}" Margin="0,14,0,6" />
+        <WrapPanel x:Name="SwatchPanel" />
+        <TextBlock x:Name="ErrorText" Foreground="{DynamicResource ErrorForegroundBrush}" FontSize="12" Margin="0,6,0,0"
+                   TextWrapping="Wrap" Visibility="Collapsed" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="Cancel" Style="{StaticResource TextButton}" IsCancel="True" MinWidth="84" />
+            <Button x:Name="OkButton" Content="Create" Style="{StaticResource AccentButton}" IsDefault="True" MinWidth="84"
+                    Margin="8,0,0,0" Click="OkButton_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>
